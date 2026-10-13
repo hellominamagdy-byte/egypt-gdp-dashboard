@@ -283,7 +283,7 @@ function kpis(host, list){
     let val;
     if (k.name) val = `<div class="kpi-value stack"><span class="name">${esc(k.name)}</span><span class="pill ${k.tone}">${esc(k.pill)}</span></div>`;
     else val = `<div class="kpi-value"><span class="num${k.good?' good':''}">${esc(k.num)}</span>${k.unit?`<span class="unit">${esc(k.unit)}</span>`:''}</div>`;
-    return `<article class="kpi${k.featured?' featured':''}"><div class="kpi-top"><div class="kpi-metric"><p class="kpi-name">${esc(k.metric)}</p><span class="chip">${esc(k.chip)}</span></div><span class="kpi-icon"><img src="assets/${k.icon}.svg" width="18" height="18" alt=""></span></div>${val}</article>`;
+    return `<article class="kpi${k.featured?' featured':''}"><div class="kpi-top"><div class="kpi-metric"><p class="kpi-name">${esc(k.metric)}</p><span class="chip">${esc(k.chip)}</span></div><span class="kpi-icon"><img src="${k.icon}.svg" width="18" height="18" alt=""></span></div>${val}</article>`;
   }).join('');
 }
 
