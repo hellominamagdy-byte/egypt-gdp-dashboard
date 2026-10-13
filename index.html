@@ -78,12 +78,13 @@ main{padding-block:28px 64px}
 .row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:stretch}
 .row.wide{grid-template-columns:minmax(0,760fr) minmax(0,540fr)}
 .row.full{grid-template-columns:minmax(0,1fr)}
-.card{display:flex;flex-direction:column;gap:20px;padding:24px;background:var(--surface);border:1px solid var(--line);border-radius:12px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.05));min-width:0}
+.card{display:flex;flex-direction:column;gap:20px;padding:24px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 2px 4px rgba(0,0,0,.05);min-width:0}
 .card h2{margin:0;font-size:24px;font-weight:600;line-height:1.3;letter-spacing:-.3px;text-wrap:balance}
 .legend{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11px}
 .legend i{width:12px;height:4px;border-radius:2px;background:var(--blue)}
 
 /* Plot */
+.plot.adapt{height:var(--h)}
 .plot{position:relative;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface);touch-action:pan-y}
 .plot svg{display:block;width:100%;height:100%}
 .xaxis{display:flex;margin-top:-2px}
@@ -172,9 +173,9 @@ svg text{font-family:var(--font)}
   .tm b{font-size:10.5px}
   .tm strong{font-size:15px}
   .tm{padding:6px}
-  .qinner.minw{min-width:600px}
   .gov-inner{min-width:760px}
-  .cinner{min-width:540px}
+  .xaxis span{font-size:9px;line-height:11px}
+  .plot.adapt{height:calc(var(--h) * .72)}
   .donut{width:200px}
   .ov-big .num{font-size:36px}
 }
@@ -188,7 +189,7 @@ svg text{font-family:var(--font)}
 
 /* Scale animation on every card: pop-in on load + scale on hover */
 @keyframes cardIn{from{transform:scale(.96)}to{transform:scale(1)}}
-.kpi,.card{animation:cardIn .5s cubic-bezier(.2,.8,.2,1) both;transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s,border-color .25s;will-change:transform}
+.kpi,.card{animation:cardIn .5s cubic-bezier(.2,.8,.2,1) both;transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s,border-color .25s}
 .kpi:hover,.card:hover{transform:scale(1.02);z-index:2;position:relative}
 .card:hover{box-shadow:0 10px 28px rgba(15,23,42,.08)}
 .kpis .kpi:nth-child(2){animation-delay:.05s}.kpis .kpi:nth-child(3){animation-delay:.1s}
@@ -277,6 +278,7 @@ const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function onWidth(el, fn){ let w = -1; const run = () => { const nw = el.clientWidth; if (nw && nw !== w){ w = nw; fn(nw); } }; new ResizeObserver(run).observe(el); run(); return () => { w = -1; run(); }; }
 function gridLines(W, H){ let s=''; for (let k=0;k<=5;k++){ const y = k===0?0.5:k===5?H-0.5:Math.round(k*H/5)+.5; s += `<line x1="0" x2="${W}" y1="${y}" y2="${y}" stroke="var(--grid)"/>`; } return s; }
+function hover(el, fn){ let raf = 0, ev; const run = () => { raf = 0; fn(ev); }; const h = e => { ev = e; if (!raf) raf = requestAnimationFrame(run); }; el.addEventListener('pointermove', h); el.addEventListener('pointerdown', h); }
 function placeTip(plot, tip, x, y, title, text){
   tip.querySelector('b').textContent = title; tip.querySelector('span').textContent = text; tip.hidden = false;
   const W = plot.clientWidth, H = plot.clientHeight, tw = tip.offsetWidth, th = tip.offsetHeight;
@@ -284,7 +286,7 @@ function placeTip(plot, tip, x, y, title, text){
   const top = clamp(y - th / 2, 8, H - th - 8);
   tip.style.transform = `translate(${left}px,${top}px)`;
 }
-const plotHTML = h => `<div class="plot" style="height:${h}px"><svg aria-hidden="true"></svg><div class="tip" hidden><b></b><span></span></div></div>`;
+const plotHTML = h => `<div class="plot adapt" style="--h:${h}px"><svg aria-hidden="true"></svg><div class="tip" hidden><b></b><span></span></div></div>`;
 
 /* KPI cards */
 function kpis(host, list){
@@ -302,7 +304,7 @@ function lineChart(host, o){
   const plot = $('.plot', host), svg = $('svg', plot), tip = $('.tip', plot);
   let pts = [], active = o.values.length - 1;
   function draw(W){
-    const H = o.h, n = o.values.length, slot = W / n, yb = H * 0.93, yt = H * 0.16, max = Math.max(...o.values);
+    const H = plot.clientHeight, n = o.values.length, slot = W / n, fs = slot < 30 ? 8 : slot < 36 ? 9 : 11, yb = H * 0.93, yt = H * 0.16, max = Math.max(...o.values);
     pts = o.values.map((v, i) => [ (i + .5) * slot, yb - v / max * (yb - yt) ]);
     const d = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('');
     let s = gridLines(W, H);
@@ -311,7 +313,7 @@ function lineChart(host, o){
     pts.forEach((p, i) => {
       s += `<circle data-i="${i}" cx="${p[0]}" cy="${p[1]}" r="3" fill="var(--blue2)" stroke="var(--surface)" stroke-width="1"/>`;
       const anchor = p[0] + 16 > W ? 'end' : 'middle';
-      s += `<text data-l="${i}" x="${anchor==='end'?W-6:p[0]}" y="${p[1]-10}" text-anchor="${anchor}" font-size="11" class="t-muted">${esc(o.vlabels[i])}</text>`;
+      s += `<text data-l="${i}" x="${anchor==='end'?W-6:p[0]}" y="${p[1]-10}" text-anchor="${anchor}" font-size="${fs}" class="t-muted">${esc(o.vlabels[i])}</text>`;
     });
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = s; setActive(active, true);
   }
@@ -319,7 +321,7 @@ function lineChart(host, o){
     active = i; svg.querySelectorAll('circle').forEach(c => c.setAttribute('r', +c.dataset.i === i ? 5 : 3)); svg.querySelectorAll('text[data-l]').forEach(t => t.style.opacity = +t.dataset.l === i ? 0 : 1);
     const p = pts[i]; if (p) placeTip(plot, tip, p[0], p[1], o.tipTitle(i), o.tipText(i));
   }
-  plot.addEventListener('pointermove', e => { const r = plot.getBoundingClientRect(); setActive(clamp(Math.floor((e.clientX - r.left) / (r.width / o.values.length)), 0, o.values.length - 1)); });
+  hover(plot, e => { const r = plot.getBoundingClientRect(); setActive(clamp(Math.floor((e.clientX - r.left) / (r.width / o.values.length)), 0, o.values.length - 1)); });
   plot.addEventListener('pointerleave', () => setActive(o.values.length - 1));
   onWidth(plot, draw);
 }
@@ -330,12 +332,12 @@ function columnChart(host, o){
   const plot = $('.plot', host), svg = $('svg', plot), tip = $('.tip', plot);
   let geo = [];
   function draw(W){
-    const H = o.h, n = o.values.length, slot = W / n, yb = H - 18, max = Math.max(...o.values), bw = Math.min(28, slot * .52);
+    const H = plot.clientHeight, n = o.values.length, slot = W / n, fs = slot < 30 ? 8 : slot < 36 ? 9 : 11, yb = H - 18, max = Math.max(...o.values), bw = Math.min(28, slot * .52);
     let s = gridLines(W, H) + `<line x1="0" x2="${W}" y1="${yb+.5}" y2="${yb+.5}" stroke="var(--line)"/>`;
     geo = o.values.map((v, i) => { const hgt = v / max * H * .72, x = (i + .5) * slot - bw / 2, y = yb - hgt; return { x, y, bw, hgt }; });
     geo.forEach((g, i) => {
       const r = 4; s += `<path data-i="${i}" d="M${g.x},${yb}V${g.y+r}Q${g.x},${g.y} ${g.x+r},${g.y}H${g.x+g.bw-r}Q${g.x+g.bw},${g.y} ${g.x+g.bw},${g.y+r}V${yb}Z" fill="var(--blue2)"/>`;
-      s += `<text x="${g.x+g.bw/2}" y="${g.y-7}" text-anchor="middle" font-size="11" font-weight="600" class="t-ink">${esc(o.vlabels[i])}</text>`;
+      s += `<text x="${g.x+g.bw/2}" y="${g.y-7}" text-anchor="middle" font-size="${fs}" font-weight="600" class="t-ink">${esc(o.vlabels[i])}</text>`;
     });
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = s;
   }
@@ -344,7 +346,7 @@ function columnChart(host, o){
     if (i == null){ tip.hidden = true; return; }
     const g = geo[i]; placeTip(plot, tip, g.x + g.bw / 2, g.y + 20, o.labels[i], o.vlabels[i]);
   }
-  plot.addEventListener('pointermove', e => { const r = plot.getBoundingClientRect(); setActive(clamp(Math.floor((e.clientX - r.left) / (r.width / o.values.length)), 0, o.values.length - 1)); });
+  hover(plot, e => { const r = plot.getBoundingClientRect(); setActive(clamp(Math.floor((e.clientX - r.left) / (r.width / o.values.length)), 0, o.values.length - 1)); });
   plot.addEventListener('pointerleave', () => setActive(null));
   onWidth(plot, draw);
 }
@@ -371,7 +373,7 @@ function quarterlyChart(host, o){
   }
   function draw(){
     const W = plot.clientWidth; if (!W) return;
-    const H = 210, n = b - a + 1, slot = W / n, vals = o.values.slice(a, b + 1);
+    const H = plot.clientHeight, n = b - a + 1, slot = W / n, vals = o.values.slice(a, b + 1);
     let s = gridLines(W, H);
     if (o.type === 'line'){
       const yb = H - 15, yt = 28, max = Math.max(...vals) * 1.0;
@@ -418,7 +420,7 @@ function quarterlyChart(host, o){
     const i = a + idx, p = pts[idx];
     placeTip(plot, tip, p[0], p[1], qlabel(i), o.fmt(o.values[i]));
   }
-  plot.addEventListener('pointermove', e => { const r = plot.getBoundingClientRect(); setActive(clamp(Math.floor((e.clientX - r.left) / (r.width / (b - a + 1))), 0, b - a)); });
+  hover(plot, e => { const r = plot.getBoundingClientRect(); setActive(clamp(Math.floor((e.clientX - r.left) / (r.width / (b - a + 1))), 0, b - a)); });
   plot.addEventListener('pointerleave', () => setActive(null));
 
   // Range slider interactions
@@ -446,6 +448,7 @@ function quarterlyChart(host, o){
     const d = e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -1 : e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 1 : 0; if (!d) return;
     e.preventDefault(); if (h === hA) a = clamp(a + d, 0, b - MIN); else b = clamp(b + d, a + MIN, N - 1); syncRange(); draw();
   }));
+  if (host.clientWidth && host.clientWidth < 500) a = N - 20;
   syncRange();
   onWidth(plot, draw);
 }
@@ -513,7 +516,7 @@ function govChart(host, rows){
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = s;
   });
   const set = i => { svg.querySelectorAll('rect').forEach(r => r.setAttribute('opacity', i == null || +r.dataset.i === i ? 1 : .45)); if (i == null){ tip.hidden = true; return; } placeTip(plot, tip, geo[i].x, geo[i].y + 30, rows[i][0], rows[i][2]); };
-  plot.addEventListener('pointermove', e => { const r = plot.getBoundingClientRect(); set(clamp(Math.floor((e.clientX - r.left - 28) / ((r.width - 28) / rows.length)), 0, rows.length - 1)); });
+  hover(plot, e => { const r = plot.getBoundingClientRect(); set(clamp(Math.floor((e.clientX - r.left - 28) / ((r.width - 28) / rows.length)), 0, rows.length - 1)); });
   plot.addEventListener('pointerleave', () => set(null));
 }
 
