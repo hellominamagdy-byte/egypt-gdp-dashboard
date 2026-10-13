@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Egypt GDP Landscape: Trends & Insights — interactive dashboard">
+<style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}</style>
+<title>Egypt GDP Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: 12-col grid, 1320 container, 20px gaps — KPI row → ad → paired chart cards, built from the Figma GDP file */
+:root{
+  --bg:#ffffff; --surface:#ffffff; --ink:#0f172a; --label:#475569; --muted:#64748b;
+  --line:#e6e9ef; --grid:#eef1f5; --chip:#eef4fb; --chip-ink:#0b66ae;
+  --ad-band:#f2f3f5; --ad-slot:#e4e7ec;
+  --blue:#0b66ae; --blue2:#1c6ca7; --sky:#1ea7e1; --green:#00b26b; --green-ink:#00a405;
+  --red:#e5202b; --amber:#f5a400; --sand:rgba(237,191,92,.92); --navy:#1e3a8a;
+  --pill-green:#e6f7ef; --pill-red:#fdecec; --area-top:rgba(30,167,225,.16); --area-blue:rgba(28,108,167,.14);
+  --tip:#1c6ca7; --tip-ink:#ffffff; --shadow:0 2px 10px rgba(15,23,42,.05);
+  --font:"Manrope",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --gutter:60px;
+}
+/* Light mode only — matches the Figma design on every device/theme */
+:root,:root[data-theme="dark"]{color-scheme:light}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;-webkit-font-smoothing:antialiased}
+.wrap{width:min(1320px,100% - 2*var(--gutter));margin-inline:auto}
+@media (max-width:1439px){:root{--gutter:40px}}
+@media (max-width:1279px){:root{--gutter:24px}}
+@media (max-width:767px){:root{--gutter:16px}}
+
+/* Top bar */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.topbar .wrap{display:flex;align-items:center;gap:16px;min-height:60px}
+.brand{font-weight:800;font-size:15px;letter-spacing:-.2px;white-space:nowrap}
+.tabs{display:flex;gap:4px;background:var(--grid);padding:4px;border-radius:10px;margin-left:auto;overflow-x:auto}
+.tab{appearance:none;border:0;background:transparent;color:var(--label);font:600 13px/1 var(--font);padding:9px 14px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--blue2);box-shadow:var(--shadow)}
+.tab:focus-visible,button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+
+main{padding-block:28px 64px}
+.page{display:flex;flex-direction:column;gap:24px}
+.page-title{margin:0;font-size:28px;font-weight:700;letter-spacing:-.4px;text-wrap:balance}
+
+/* KPI cards */
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:20px}
+.kpi{position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:14px;min-height:140px;padding:20px;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);min-width:0;transition:border-color .2s,box-shadow .2s}
+.kpi:hover{border-color:color-mix(in srgb,var(--blue) 40%,var(--line));box-shadow:0 6px 18px rgba(15,23,42,.08)}
+.kpi.featured{background:linear-gradient(90deg,#1c6ca7,#084a80);border-color:transparent;color:#fff}
+.kpi-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.kpi-metric{display:flex;flex-direction:column;gap:5px;align-items:flex-start;min-width:0}
+.kpi-name{margin:0;font-size:13px;font-weight:500;line-height:14px;color:var(--label);min-height:28px}
+.featured .kpi-name{color:#fff}
+.chip{display:inline-block;padding:3px 8px;border-radius:6px;background:var(--chip);color:var(--chip-ink);font-size:11px;font-weight:600;line-height:12px;white-space:nowrap}
+.featured .chip{background:rgba(255,255,255,.16);color:#fff}
+.kpi-icon{flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:8px;background:var(--chip)}
+.featured .kpi-icon{background:rgba(255,255,255,.16)}
+.kpi-icon img{display:block;width:18px;height:18px}
+.kpi-value{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.kpi-value .num{font-size:30px;font-weight:700;line-height:36px;letter-spacing:-.3px}
+.kpi-value .unit{font-size:14px;font-weight:500;color:var(--muted)}
+.featured .kpi-value .unit{color:#fff}
+.kpi-value .num.good{color:var(--green-ink)}
+.kpi-value.stack{flex-direction:column;align-items:flex-start;gap:8px}
+.kpi-value .name{font-size:20px;font-weight:700;line-height:22px;letter-spacing:-.2px}
+.pill{display:inline-block;padding:3px 8px;border-radius:6px;font-size:13px;font-weight:600;line-height:14px}
+.pill.green{background:var(--pill-green);color:var(--green)}
+.pill.red{background:var(--pill-red);color:var(--red)}
+
+/* Ad band */
+.ad{display:grid;place-items:center;height:100px;background:var(--ad-band);border-radius:4px}
+.ad-slot{width:728px;max-width:calc(100% - 24px);height:90px;border-radius:6px;background:var(--ad-slot);display:grid;place-items:center;color:var(--muted);font-size:11px;letter-spacing:.6px;text-transform:uppercase}
+
+/* Rows & cards */
+.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:stretch}
+.row.wide{grid-template-columns:minmax(0,760fr) minmax(0,540fr)}
+.row.full{grid-template-columns:minmax(0,1fr)}
+.card{display:flex;flex-direction:column;gap:20px;padding:24px;background:var(--surface);border:1px solid var(--line);border-radius:12px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.05));min-width:0}
+.card h2{margin:0;font-size:24px;font-weight:600;line-height:1.3;letter-spacing:-.3px;text-wrap:balance}
+.legend{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11px}
+.legend i{width:12px;height:4px;border-radius:2px;background:var(--blue)}
+
+/* Plot */
+.plot{position:relative;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface);touch-action:pan-y}
+.plot svg{display:block;width:100%;height:100%}
+.xaxis{display:flex;margin-top:-2px}
+.xaxis span{flex:1 1 0;min-width:0;text-align:center;font-size:11px;line-height:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tip{position:absolute;left:0;top:0;padding:10px 12px;border-radius:8px;background:var(--tip);color:var(--tip-ink);pointer-events:none;white-space:nowrap;display:flex;flex-direction:column;gap:5px;box-shadow:0 6px 16px rgba(8,74,128,.25);transition:transform .12s ease-out}
+.tip b{font-size:11px;font-weight:600}
+.tip span{font-size:13px}
+svg text{font-family:var(--font)}
+.t-muted{fill:var(--muted)} .t-ink{fill:var(--ink)}
+
+/* Quarterly charts */
+.scroll-x{overflow-x:auto;overscroll-behavior-x:contain;margin-inline:-4px;padding-inline:4px;padding-bottom:2px}
+.cinner{min-width:0}
+.qinner{display:flex;flex-direction:column;gap:10px;min-width:0}
+.range{position:relative;height:22px;margin-inline:9px;cursor:pointer;touch-action:none}
+.range .track{position:absolute;left:0;right:0;top:8px;height:6px;border-radius:4px;background:var(--grid)}
+.range .sel{position:absolute;top:8px;height:6px;border-radius:4px;background:var(--sky);opacity:.5;cursor:grab}
+.range .handle{position:absolute;top:2px;width:18px;height:18px;margin-left:-9px;border-radius:10px;background:var(--surface);border:1px solid var(--line);box-shadow:0 1px 3px rgba(15,23,42,.15);display:grid;place-items:center;cursor:ew-resize;padding:0}
+.range .handle::before{content:"";width:3px;height:8px;border-inline:1px solid var(--muted)}
+.qmeta{display:flex;justify-content:space-between;gap:12px;font-size:11px;color:var(--muted)}
+.qmeta .qwin{font-variant-numeric:tabular-nums;text-align:right}
+.qaxis{display:block;width:100%;height:38px;overflow:visible}
+
+/* Progress bars */
+.bars{display:flex;flex-direction:column;gap:12px}
+.bar-row{display:grid;grid-template-columns:220px minmax(0,1fr) 72px;gap:12px;align-items:center;font-size:12px;border-radius:6px;transition:background .15s}
+.bar-row:hover{background:var(--grid)}
+.bar-row .lbl{color:var(--ink);min-width:0}
+.bar-row .val{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.bar-track{height:8px;border-radius:4px;background:var(--grid);overflow:hidden}
+.bar-fill{height:100%;border-radius:4px}
+
+/* Treemap */
+.tm-host{flex:1;display:flex;align-items:center}
+.treemap{position:relative;width:100%;height:360px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.tm{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:12px;text-align:center;transition:filter .15s}
+.tm:hover{filter:brightness(1.07)}
+.tm b{font-size:12px;font-weight:600;line-height:1.3}
+.tm strong{font-size:18px;font-weight:700}
+
+/* Donut */
+.donut-wrap{display:flex;flex-direction:column;align-items:center;gap:24px;flex:1;justify-content:center}
+.donut{width:min(250px,100%);aspect-ratio:1;max-width:100%}
+.donut circle{transition:stroke-width .15s}
+.dlegend{width:100%;display:flex;flex-direction:column;gap:12px}
+.dlegend div{display:flex;align-items:center;gap:10px;font-size:14px;padding:6px 8px;border-radius:6px}
+.dlegend div.on{background:var(--grid)}
+.dlegend i{width:12px;height:12px;border-radius:50%}
+.dlegend b{margin-left:auto;font-variant-numeric:tabular-nums}
+
+/* Overview */
+.ov{display:flex;flex-direction:column;gap:28px;flex:1;justify-content:center}
+.ov-big{display:flex;align-items:baseline;gap:10px}
+.ov-big .num{font-size:44px;font-weight:800;letter-spacing:-1px;color:var(--blue2)}
+.ov-big .unit{font-size:16px;font-weight:600;color:var(--muted)}
+.split{display:flex;flex-direction:column;gap:8px}
+.split-head{display:flex;justify-content:space-between;font-size:13px}
+.split-head b{font-variant-numeric:tabular-nums}
+.split-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;gap:2px;background:var(--surface)}
+
+@media (max-width:1199px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi.featured{grid-column:1/-1}
+}
+@media (max-width:1023px){
+  .row,.row.wide{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:767px){
+  main{padding-block:20px 48px}
+  .page{gap:16px}
+  .page-title{font-size:21px}
+  .brand{display:none}
+  .tabs{margin-left:0;width:100%}
+  .tab{flex:1}
+  .kpis{grid-template-columns:minmax(0,1fr);gap:12px}
+  .kpi{min-height:0;padding:16px}
+  .kpi-name{min-height:0}
+  .kpi-value .num{font-size:26px;line-height:30px}
+  .ad{height:70px}
+  .ad-slot{width:320px;height:50px}
+  .row{gap:16px}
+  .card{padding:16px;gap:16px}
+  .card h2{font-size:18px}
+  .bar-row{grid-template-columns:minmax(0,42%) minmax(0,1fr) 44px;gap:8px;font-size:11.5px}
+  .treemap{height:300px}
+  .tm b{font-size:10.5px}
+  .tm strong{font-size:15px}
+  .tm{padding:6px}
+  .qinner.minw{min-width:600px}
+  .gov-inner{min-width:760px}
+  .cinner{min-width:540px}
+  .donut{width:200px}
+  .ov-big .num{font-size:36px}
+}
+/* Brand-blue scrollbars */
+.scroll-x,html{scrollbar-color:var(--blue) var(--chip);scrollbar-width:thin}
+.scroll-x::-webkit-scrollbar,html::-webkit-scrollbar{height:8px;width:8px}
+.scroll-x::-webkit-scrollbar-track,html::-webkit-scrollbar-track{background:var(--chip);border-radius:8px}
+.scroll-x::-webkit-scrollbar-thumb,html::-webkit-scrollbar-thumb{background:var(--blue);border-radius:8px}
+.scroll-x::-webkit-scrollbar-thumb:hover,html::-webkit-scrollbar-thumb:hover{background:var(--blue2)}
+.scroll-x::-webkit-scrollbar-button{display:none}
+
+/* Scale animation on every card: pop-in on load + scale on hover */
+@keyframes cardIn{from{transform:scale(.96)}to{transform:scale(1)}}
+.kpi,.card{animation:cardIn .5s cubic-bezier(.2,.8,.2,1) both;transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s,border-color .25s;will-change:transform}
+.kpi:hover,.card:hover{transform:scale(1.02);z-index:2;position:relative}
+.card:hover{box-shadow:0 10px 28px rgba(15,23,42,.08)}
+.kpis .kpi:nth-child(2){animation-delay:.05s}.kpis .kpi:nth-child(3){animation-delay:.1s}
+.kpis .kpi:nth-child(4){animation-delay:.15s}.kpis .kpi:nth-child(5){animation-delay:.2s}
+@media (hover:none){.kpi:hover,.card:hover{transform:none}}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section class="page" id="page-gdp">
+    <h1 class="page-title">Egypt’s GDP Landscape: Trends &amp; Insights</h1>
+    <div class="kpis" id="gdp-kpis"></div>
+    <div class="ad"><div class="ad-slot">Advertisement</div></div>
+    <div class="row">
+      <article class="card"><h2>Annual GDP at Current Prices (EGP trillion)</h2><div id="c-annual"></div></article>
+      <article class="card"><h2>Real GDP Growth Rate</h2><div id="c-growth"></div></article>
+    </div>
+    <div class="ad"><div class="ad-slot">Advertisement</div></div>
+    <div class="row">
+      <article class="card"><h2>Quarterly GDP</h2><div id="c-qgdp"></div></article>
+      <article class="card"><h2>Quarterly GDP Growth Rate</h2><div id="c-qgr"></div></article>
+    </div>
+    <div class="ad"><div class="ad-slot">Advertisement</div></div>
+    <div class="row wide">
+      <article class="card"><h2>Sectorial GDP in FY2024/2025</h2>
+        <div class="legend"><i></i>GDP at Current Prices (EGP trillion)</div>
+        <div class="bars" id="c-sectors"></div></article>
+      <article class="card"><h2>Top Sectors Contributing to GDP in FY 2024/2025</h2>
+        <div class="tm-host"><div class="treemap" id="c-treemap"></div></div></article>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(() => {
+/* ───────── Data (from the source spreadsheets) ───────── */
+const FY_ANNUAL = ['2015/2014','2016/2015','2017/2016','2018/2017','2019/2018','2020/2019','2021/2020','2022/2021','2023/2022','2024/2023','2025/2024'];
+const GDP_ANNUAL = [2.47,2.67,3.60,4.56,5.44,5.88,6.34,7.46,9.65,13.24,17.40];
+const GDP_GROWTH = [4.37,4.35,4.18,5.31,5.56,3.57,3.3,6.6,3.8,2.4,4.4];
+const GDP_GROWTH_LBL = ['4.37%','4.35%','4.18%','5.31%','5.56%','3.57%','3.3%','6.6%','3.8%','2.4%','4.4%'];
+const FY_Q = ['2015/2014','2016/2015','2017/2016','2018/2017','2019/2018','2020/2019','2021/2020','2022/2021','2023/2022','2024/2023','2025/2024','2026/2025'];
+const Q_GDP = [654.41,631.08,594.88,592.73,702.18,680.99,638.96,652.28,854.76,887.73,911.54,948.95,1180.90,1176.87,1085.43,1120.45,1417.41,1412.78,1303.01,1310.83,1560.25,1555.70,1418.66,1345.02,1612.21,1664.56,1531.96,1528.01,1890.55,1921.40,1776.40,1868.78,2304.72,2404.09,2448.53,2488.62,3157.67,3293.59,3389.73,3395.31,4412.53,4333.73,4415.52,4234.99,5440.04,5188.89];
+const Q_GR = [5.63,5.22,3.27,3.33,5.12,4.05,3.71,4.45,3.42,3.92,4.42,5.00,5.18,5.28,5.40,5.38,5.35,5.55,5.62,5.70,5.60,5.60,5.00,-1.70,0.70,2.00,2.90,7.70,9.80,8.30,5.40,3.30,4.40,3.90,3.90,2.90,2.65,2.30,2.22,2.40,3.53,4.77,4.30,5.03,5.30,5.32];
+const QUARTERS = Q_GDP.map((_, i) => ({ fy: FY_Q[Math.floor(i / 4)], q: 'Q' + (i % 4 + 1), g: Math.floor(i / 4) }));
+const C = { blue:'var(--blue)', blue2:'var(--blue2)', sky:'var(--sky)', green:'var(--green)', red:'var(--red)', amber:'var(--amber)', navy:'var(--navy)' };
+const SECTORS = [
+  ['Water & Sewege',0.07,C.red],['Insurance',0.11,C.amber],['Suez Canal',0.17,C.blue],['Electricity',0.25,C.sky],
+  ['Other Services',0.27,C.red],['Natural Gas Extraction',0.28,C.blue],['Education',0.30,C.sky],['Other Extractive Activities',0.34,C.amber],
+  ['Health',0.47,C.green],['Crude Oil Extraction',0.47,C.blue],['Information & Telecommunications',0.48,C.sky],['Refining',0.52,C.red],
+  ['Financial Intermediaries',0.60,C.amber],['Hotels & Restaurants',0.65,C.sky],['Government',0.90,C.blue],['Transportation & Storage',1.03,C.navy],
+  ['Real Estate',1.30,C.green],['Building & Construction',1.80,C.red],['Non-Oil Industries',2.10,C.amber],['Wholesale & Retail',2.40,C.sky],
+  ['Agriculture & Fishery',3.00,C.blue]];
+const TREEMAP = [
+  {n:'Agriculture & Fishery',v:'17.2%',bg:'#1c6ca7',fg:'#fff',l:0,t:0,w:27.95,h:100},
+  {n:'Wholesale & Retail',v:'13.8%',bg:'#1ea7e1',fg:'#fff',l:28.15,t:0,w:38.2,h:59.1},
+  {n:'Non-Oil Industries',v:'12.1%',bg:'#f5a400',fg:'#0f172a',l:66.55,t:0,w:33.45,h:59.1},
+  {n:'Building & Construction',v:'10.3%',bg:'rgba(237,191,92,.92)',fg:'#000',l:28.15,t:59.3,w:41.5,h:40.7},
+  {n:'Real Estate',v:'7.5%',bg:'#00b26b',fg:'#0f172a',l:69.85,t:59.3,w:30.15,h:40.7}];
+
+const LF_YEARS = ['2014','2015','2016','2017','2018','2019','2020','2021','2022','2023','2024','2025'];
+const LF = [27.9,28.4,28.9,29.5,28.9,28.3,28.5,29.4,30.1,31.1,32.04,34.15];
+const LF_LBL = ['27.9','28.4','28.9','29.5','28.9','28.3','28.5','29.4','30.1','31.1','32.04','34.15'];
+const GENDER = [['Males',78.1,'#0b66ae'],['Females',21.9,'#f5a400']];
+const STATUS = [['Unemployed',2.14,C.red],['Employed',32.02,C.blue2]];
+const AGE = [['15-19',6.6,'6.6%'],['20-24',11.2,'11.2%'],['25-29',11.4,'11.4%'],['30-39',22.1,'22.1%'],['40-49',25.0,'25.0%'],['50-59',17.9,'17.9%'],['60-64',4.0,'4.0%'],['> 60',1.8,'1.8%']];
+const EMP_SECTOR = [
+  ['Public Admin., Defense & Social Insurance',4.0,C.red],['Education',7.0,C.sky],['Transportation & Storage',8.3,C.navy],['Other',9.0,C.amber],
+  ['Building & Construction',11.3,C.red],['Transformative Industries',13.5,C.amber],['Wholesale & Retail',16.4,C.sky],['Agriculture & Fishery',20.5,C.blue]];
+const GOV = [['South Sinai',23.8,'23.8%'],['Ismailia',16.7,'16.7%'],['Port Said',14.1,'14.1%'],['Red Sea',14.1,'14.1%'],['Cairo',13.7,'13.7%'],['Suez',11.0,'11.0%'],['Alexandria',10.6,'10.6%'],['Aswan',9.1,'9.1%'],['Giza',9.1,'9.1%'],['Qalyubia',7.1,'7.1%'],['Gharbia',6.8,'6.8%'],['Assiut',5,'5%'],['Matrouh',5.2,'5.2%'],['Sohag',5.2,'5.2%'],['Qena',4.5,'4.5%'],['Minya',4.2,'4.2%'],['Damietta',4.0,'4.0%'],['Luxor',4.0,'4.0%'],['Behira',4.0,'4.0%'],['Beni Suef',3.7,'3.7%'],['Menoufia',3.6,'3.6%'],['Kafr ElShekh',2.3,'2.3%'],['Fayoum',2.3,'2.3%'],['New Valley',2.2,'2.2%'],['Sharqia',1.3,'1.3%'],['Daqahlia',1.1,'1.1%']];
+
+/* ───────── Helpers ───────── */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function onWidth(el, fn){ let w = -1; const run = () => { const nw = el.clientWidth; if (nw && nw !== w){ w = nw; fn(nw); } }; new ResizeObserver(run).observe(el); run(); return () => { w = -1; run(); }; }
+function gridLines(W, H){ let s=''; for (let k=0;k<=5;k++){ const y = k===0?0.5:k===5?H-0.5:Math.round(k*H/5)+.5; s += `<line x1="0" x2="${W}" y1="${y}" y2="${y}" stroke="var(--grid)"/>`; } return s; }
+function placeTip(plot, tip, x, y, title, text){
+  tip.querySelector('b').textContent = title; tip.querySelector('span').textContent = text; tip.hidden = false;
+  const W = plot.clientWidth, H = plot.clientHeight, tw = tip.offsetWidth, th = tip.offsetHeight;
+  let left = x - tw - 14; if (left < 8) left = x + 14; left = clamp(left, 8, W - tw - 8);
+  const top = clamp(y - th / 2, 8, H - th - 8);
+  tip.style.transform = `translate(${left}px,${top}px)`;
+}
+const plotHTML = h => `<div class="plot" style="height:${h}px"><svg aria-hidden="true"></svg><div class="tip" hidden><b></b><span></span></div></div>`;
+
+/* KPI cards */
+function kpis(host, list){
+  host.innerHTML = list.map(k => {
+    let val;
+    if (k.name) val = `<div class="kpi-value stack"><span class="name">${esc(k.name)}</span><span class="pill ${k.tone}">${esc(k.pill)}</span></div>`;
+    else val = `<div class="kpi-value"><span class="num${k.good?' good':''}">${esc(k.num)}</span>${k.unit?`<span class="unit">${esc(k.unit)}</span>`:''}</div>`;
+    return `<article class="kpi${k.featured?' featured':''}"><div class="kpi-top"><div class="kpi-metric"><p class="kpi-name">${esc(k.metric)}</p><span class="chip">${esc(k.chip)}</span></div><span class="kpi-icon"><img src="assets/${k.icon}.svg" width="18" height="18" alt=""></span></div>${val}</article>`;
+  }).join('');
+}
+
+/* Line chart (annual) */
+function lineChart(host, o){
+  host.innerHTML = `<div class="scroll-x"><div class="cinner">` + plotHTML(o.h) + `<div class="xaxis">${o.labels.map(l => `<span>${o.split ? esc(l).replace('/', '/<br>') : esc(l)}</span>`).join('')}</div></div></div>`;
+  const plot = $('.plot', host), svg = $('svg', plot), tip = $('.tip', plot);
+  let pts = [], active = o.values.length - 1;
+  function draw(W){
+    const H = o.h, n = o.values.length, slot = W / n, yb = H * 0.93, yt = H * 0.16, max = Math.max(...o.values);
+    pts = o.values.map((v, i) => [ (i + .5) * slot, yb - v / max * (yb - yt) ]);
+    const d = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('');
+    let s = gridLines(W, H);
+    if (o.area) s += `<defs><linearGradient id="${o.id}-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--area-blue)"/><stop offset="1" stop-color="var(--area-blue)" stop-opacity="0"/></linearGradient></defs><path d="${d}L${pts[n-1][0]},${H}L${pts[0][0]},${H}Z" fill="url(#${o.id}-g)"/>`;
+    s += `<path d="${d}" fill="none" stroke="var(--blue2)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    pts.forEach((p, i) => {
+      s += `<circle data-i="${i}" cx="${p[0]}" cy="${p[1]}" r="3" fill="var(--blue2)" stroke="var(--surface)" stroke-width="1"/>`;
+      const anchor = p[0] + 16 > W ? 'end' : 'middle';
+      s += `<text data-l="${i}" x="${anchor==='end'?W-6:p[0]}" y="${p[1]-10}" text-anchor="${anchor}" font-size="11" class="t-muted">${esc(o.vlabels[i])}</text>`;
+    });
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = s; setActive(active, true);
+  }
+  function setActive(i, keep){
+    active = i; svg.querySelectorAll('circle').forEach(c => c.setAttribute('r', +c.dataset.i === i ? 5 : 3)); svg.querySelectorAll('text[data-l]').forEach(t => t.style.opacity = +t.dataset.l === i ? 0 : 1);
+    const p = pts[i]; if (p) placeTip(plot, tip, p[0], p[1], o.tipTitle(i), o.tipText(i));
+  }
+  plot.addEventListener('pointermove', e => { const r = plot.getBoundingClientRect(); setActive(clamp(Math.floor((e.clientX - r.left) / (r.width / o.values.length)), 0, o.values.length - 1)); });
+  plot.addEventListener('pointerleave', () => setActive(o.values.length - 1));
+  onWidth(plot, draw);
+}
+
+/* Column chart (annual growth) */
+function columnChart(host, o){
+  host.innerHTML = `<div class="scroll-x"><div class="cinner">` + plotHTML(o.h) + `<div class="xaxis">${o.labels.map(l => `<span>${esc(l).replace('/', '/<br>')}</span>`).join('')}</div></div></div>`;
+  const plot = $('.plot', host), svg = $('svg', plot), tip = $('.tip', plot);
+  let geo = [];
+  function draw(W){
+    const H = o.h, n = o.values.length, slot = W / n, yb = H - 18, max = Math.max(...o.values), bw = Math.min(28, slot * .52);
+    let s = gridLines(W, H) + `<line x1="0" x2="${W}" y1="${yb+.5}" y2="${yb+.5}" stroke="var(--line)"/>`;
+    geo = o.values.map((v, i) => { const hgt = v / max * H * .72, x = (i + .5) * slot - bw / 2, y = yb - hgt; return { x, y, bw, hgt }; });
+    geo.forEach((g, i) => {
+      const r = 4; s += `<path data-i="${i}" d="M${g.x},${yb}V${g.y+r}Q${g.x},${g.y} ${g.x+r},${g.y}H${g.x+g.bw-r}Q${g.x+g.bw},${g.y} ${g.x+g.bw},${g.y+r}V${yb}Z" fill="var(--blue2)"/>`;
+      s += `<text x="${g.x+g.bw/2}" y="${g.y-7}" text-anchor="middle" font-size="11" font-weight="600" class="t-ink">${esc(o.vlabels[i])}</text>`;
+    });
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = s;
+  }
+  function setActive(i){
+    svg.querySelectorAll('path[data-i]').forEach(p => p.setAttribute('opacity', i == null || +p.dataset.i === i ? 1 : .45));
+    if (i == null){ tip.hidden = true; return; }
+    const g = geo[i]; placeTip(plot, tip, g.x + g.bw / 2, g.y + 20, o.labels[i], o.vlabels[i]);
+  }
+  plot.addEventListener('pointermove', e => { const r = plot.getBoundingClientRect(); setActive(clamp(Math.floor((e.clientX - r.left) / (r.width / o.values.length)), 0, o.values.length - 1)); });
+  plot.addEventListener('pointerleave', () => setActive(null));
+  onWidth(plot, draw);
+}
+
+/* Quarterly chart with range slider + two-tier axis */
+function quarterlyChart(host, o){
+  const N = o.values.length; let a = 0, b = N - 1, active = null;
+  host.innerHTML = `<div class="scroll-x"><div class="qinner minw">
+    <div class="range" aria-label="Quarter range"><div class="track"></div><div class="sel"></div>
+      <button class="handle" data-h="a" role="slider" aria-label="Range start"></button>
+      <button class="handle" data-h="b" role="slider" aria-label="Range end"></button></div>
+    <div class="qmeta"><span>${esc(o.legend)}</span><span class="qwin"></span></div>
+    ${plotHTML(210)}
+    <svg class="qaxis" aria-hidden="true"></svg></div></div>`;
+  const plot = $('.plot', host), svg = $('svg', plot), tip = $('.tip', plot), axis = $('.qaxis', host);
+  const range = $('.range', host), sel = $('.sel', range), hA = $('[data-h="a"]', range), hB = $('[data-h="b"]', range), win = $('.qwin', host);
+  let pts = [];
+  const qlabel = i => `${QUARTERS[i].q} ${QUARTERS[i].fy}`;
+  function syncRange(){
+    const pa = a / (N - 1) * 100, pb = b / (N - 1) * 100;
+    hA.style.left = pa + '%'; hB.style.left = pb + '%'; sel.style.left = pa + '%'; sel.style.width = (pb - pa) + '%';
+    hA.setAttribute('aria-valuetext', qlabel(a)); hB.setAttribute('aria-valuetext', qlabel(b));
+    win.textContent = `${qlabel(a)} – ${qlabel(b)}`;
+  }
+  function draw(){
+    const W = plot.clientWidth; if (!W) return;
+    const H = 210, n = b - a + 1, slot = W / n, vals = o.values.slice(a, b + 1);
+    let s = gridLines(W, H);
+    if (o.type === 'line'){
+      const yb = H - 15, yt = 28, max = Math.max(...vals) * 1.0;
+      pts = vals.map((v, k) => [ (k + .5) * slot, yb - v / max * (yb - yt) ]);
+      const d = pts.map((p, k) => (k ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('');
+      s += `<defs><linearGradient id="${o.id}-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--area-top)"/><stop offset="1" stop-color="var(--area-top)" stop-opacity="0"/></linearGradient></defs>`;
+      s += `<path d="${d}L${pts[n-1][0]},${H}L${pts[0][0]},${H}Z" fill="url(#${o.id}-g)"/><path d="${d}" fill="none" stroke="var(--sky)" stroke-width="1.6" stroke-linejoin="round"/>`;
+      const r = slot < 8 ? 1.5 : 2;
+      pts.forEach((p, k) => s += `<circle data-k="${k}" cx="${p[0]}" cy="${p[1]}" r="${r}" fill="var(--sky)"/>`);
+    } else {
+      const lo = Math.min(0, ...vals) * 1.25, hi = Math.max(...vals) * 1.12, pt = 14, pb = 10;
+      const y = v => pt + (hi - v) / (hi - lo) * (H - pt - pb), y0 = y(0), bw = Math.max(2, Math.min(9, slot * .55));
+      pts = vals.map((v, k) => { const x = (k + .5) * slot; return [x, Math.min(y(v), y0), v]; });
+      vals.forEach((v, k) => { const x = (k + .5) * slot - bw / 2, top = Math.min(y(v), y0), hgt = Math.max(1, Math.abs(y(v) - y0));
+        s += `<rect data-k="${k}" x="${x}" y="${top}" width="${bw}" height="${hgt}" rx="${Math.min(2, bw/3)}" fill="${v < 0 ? 'var(--red)' : 'var(--green)'}"/>`; });
+      s += `<line x1="0" x2="${W}" y1="${y0}" y2="${y0}" stroke="var(--line)"/>`;
+    }
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = s;
+    drawAxis(W, slot);
+    setActive(active);
+  }
+  function drawAxis(W, slot){
+    let s = ''; const fs = 8;
+    const showQ = k => slot >= 11 || (slot >= 6 ? (k % 2 === 0) : (k % 4 === 0));
+    for (let i = a; i <= b; i++){ const k = i - a, x = (k + .5) * slot; if (showQ(QUARTERS[i].q === 'Q1' ? 0 : QUARTERS[i].q === 'Q2' ? 1 : QUARTERS[i].q === 'Q3' ? 2 : 3)) s += `<text x="${x}" y="9" text-anchor="middle" font-size="${fs}" class="t-muted">${QUARTERS[i].q}</text>`; }
+    let start = a;
+    for (let i = a; i <= b + 1; i++){
+      if (i === b + 1 || QUARTERS[i].g !== QUARTERS[start].g){
+        const x0 = (start - a) * slot, x1 = (i - a) * slot, w = x1 - x0, fy = QUARTERS[start].fy, cx = (x0 + x1) / 2;
+        if (start !== a) s += `<line x1="${x0}" x2="${x0}" y1="0" y2="38" stroke="var(--line)"/>`;
+        if (w >= 40) s += `<text x="${cx}" y="25" text-anchor="middle" font-size="${fs}" class="t-muted">${fy}</text>`;
+        else if (w >= 16){ const [p1, p2] = fy.split('/'); s += `<text x="${cx}" y="23" text-anchor="middle" font-size="${fs}" class="t-muted">${p1}/</text><text x="${cx}" y="33" text-anchor="middle" font-size="${fs}" class="t-muted">${p2}</text>`; }
+        start = i;
+      }
+    }
+    axis.setAttribute('viewBox', `0 0 ${W} 38`); axis.innerHTML = s;
+  }
+  function setActive(k){
+    active = k;
+    const def = o.type === 'line' ? b - a : null, idx = k == null ? def : k;
+    if (o.type === 'line') svg.querySelectorAll('circle').forEach(c => c.setAttribute('r', +c.dataset.k === idx ? 4.5 : (plot.clientWidth / (b - a + 1) < 8 ? 1.5 : 2)));
+    else svg.querySelectorAll('rect[data-k]').forEach(r => r.setAttribute('opacity', idx == null || +r.dataset.k === idx ? 1 : .45));
+    if (idx == null || !pts[idx]){ tip.hidden = true; return; }
+    const i = a + idx, p = pts[idx];
+    placeTip(plot, tip, p[0], p[1], qlabel(i), o.fmt(o.values[i]));
+  }
+  plot.addEventListener('pointermove', e => { const r = plot.getBoundingClientRect(); setActive(clamp(Math.floor((e.clientX - r.left) / (r.width / (b - a + 1))), 0, b - a)); });
+  plot.addEventListener('pointerleave', () => setActive(null));
+
+  // Range slider interactions
+  const idxAt = x => { const r = range.getBoundingClientRect(); return clamp(Math.round((x - r.left) / r.width * (N - 1)), 0, N - 1); };
+  const MIN = 3;
+  let drag = null;
+  range.addEventListener('pointerdown', e => {
+    const h = e.target.closest('.handle'), onSel = e.target === sel;
+    if (h) drag = { type: h.dataset.h };
+    else if (onSel) drag = { type: 'pan', x0: idxAt(e.clientX), a0: a, b0: b };
+    else { const i = idxAt(e.clientX); drag = { type: Math.abs(i - a) < Math.abs(i - b) ? 'a' : 'b' }; move(e); }
+    range.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  function move(e){
+    if (!drag) return; const i = idxAt(e.clientX);
+    if (drag.type === 'a') a = clamp(i, 0, b - MIN);
+    else if (drag.type === 'b') b = clamp(i, a + MIN, N - 1);
+    else { const d = clamp(i - drag.x0, -drag.a0, N - 1 - drag.b0); a = drag.a0 + d; b = drag.b0 + d; }
+    active = null; syncRange(); draw();
+  }
+  range.addEventListener('pointermove', move);
+  range.addEventListener('pointerup', () => drag = null);
+  range.addEventListener('pointercancel', () => drag = null);
+  [hA, hB].forEach(h => h.addEventListener('keydown', e => {
+    const d = e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -1 : e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 1 : 0; if (!d) return;
+    e.preventDefault(); if (h === hA) a = clamp(a + d, 0, b - MIN); else b = clamp(b + d, a + MIN, N - 1); syncRange(); draw();
+  }));
+  syncRange();
+  onWidth(plot, draw);
+}
+
+/* Progress bar list */
+function barList(host, rows, max, fmt){
+  host.innerHTML = rows.map(([l, v, c]) => `<div class="bar-row"><span class="lbl">${esc(l)}</span><div class="bar-track"><div class="bar-fill" style="width:${(v / max * 100).toFixed(2)}%;background:${c}"></div></div><span class="val">${fmt(v)}</span></div>`).join('');
+}
+
+/* Treemap */
+function treemap(host, blocks){
+  host.innerHTML = blocks.map(b => `<div class="tm" style="left:${b.l}%;top:${b.t}%;width:calc(${b.w}% - 1px);height:calc(${b.h}% - 1px);background:${b.bg};color:${b.fg}"><b>${esc(b.n)}</b><strong>${b.v}</strong></div>`).join('');
+}
+
+/* Donut */
+function donut(host, segs){
+  const R = 80, Cc = 2 * Math.PI * R; let off = 0;
+  const arcs = segs.map(([l, v, c], i) => { const len = v / 100 * Cc; const s = `<circle data-i="${i}" cx="100" cy="100" r="${R}" fill="none" stroke="${c}" stroke-width="30" stroke-dasharray="${len} ${Cc - len}" stroke-dashoffset="${-off}" transform="rotate(-90 100 100)"><title>${l} ${v}%</title></circle>`; off += len; return s; }).join('');
+  host.innerHTML = `<svg class="donut" viewBox="0 0 200 200" role="img" aria-label="${segs.map(s => s[0] + ' ' + s[1] + '%').join(', ')}">${arcs}</svg>
+    <div class="dlegend">${segs.map(([l, v, c], i) => `<div data-i="${i}"><i style="background:${c}"></i>${l}<b>${v}%</b></div>`).join('')}</div>`;
+  const hi = i => { host.querySelectorAll('circle').forEach(c => c.setAttribute('stroke-width', +c.dataset.i === i ? 36 : 30)); host.querySelectorAll('.dlegend div').forEach(d => d.classList.toggle('on', +d.dataset.i === i)); };
+  host.querySelectorAll('[data-i]').forEach(el => { el.addEventListener('pointerenter', () => hi(+el.dataset.i)); el.addEventListener('pointerleave', () => hi(-1)); });
+}
+
+/* Horizontal bars with x-axis (employment status) */
+function hbarAxis(host, rows, maxAxis, step){
+  host.innerHTML = `<div class="plot" style="height:300px;border:0"><svg role="img" aria-label="${rows.map(r => r[0] + ' ' + r[1]).join(', ')}"></svg></div>`;
+  const plot = $('.plot', host), svg = $('svg', plot);
+  onWidth(plot, W => {
+    const H = 300, L = 92, R = 50, T = 20, B = 30, pw = W - L - R, ph = H - T - B, rh = ph / rows.length, bh = Math.min(34, rh * .38);
+    let s = '';
+    for (let v = 0; v <= maxAxis; v += step){ const x = L + v / maxAxis * pw; s += `<line x1="${x}" x2="${x}" y1="${T}" y2="${H-B}" stroke="var(--grid)"/><text x="${x}" y="${H-B+18}" text-anchor="middle" font-size="11" class="t-muted">${v}</text>`; }
+    rows.forEach(([l, v, c], i) => { const cy = T + (i + .5) * rh, w = v / maxAxis * pw;
+      s += `<text x="${L-12}" y="${cy+4}" text-anchor="end" font-size="12" class="t-ink">${l}</text><rect x="${L}" y="${cy-bh/2}" width="${w}" height="${bh}" rx="4" fill="${c}"/><text x="${L+w+8}" y="${cy+4}" font-size="12" font-weight="600" class="t-ink">${v}</text>`; });
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = s;
+  });
+}
+
+/* Centered age distribution */
+function pyramid(host, rows, max){
+  const H = rows.length * 38 + 8;
+  host.innerHTML = `<div class="plot" style="height:${H}px;border:0"><svg role="img" aria-label="${rows.map(r => r[0] + ' ' + r[2]).join(', ')}"></svg></div>`;
+  const plot = $('.plot', host), svg = $('svg', plot);
+  onWidth(plot, W => {
+    const L = 56, pw = W - L - 8, cx = L + pw / 2; let s = `<line x1="${cx}" x2="${cx}" y1="0" y2="${H}" stroke="var(--grid)"/>`;
+    rows.forEach(([l, v, t], i) => { const y = 4 + i * 38, w = v / max * pw * .96, x = cx - w / 2, inside = w >= 44;
+      s += `<text x="0" y="${y+19}" font-size="12" class="t-muted">${esc(l)}</text><rect x="${x}" y="${y}" width="${w}" height="30" rx="4" fill="var(--blue2)"/>`;
+      s += inside ? `<text x="${cx}" y="${y+19.5}" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">${t}</text>` : `<text x="${x+w+6}" y="${y+19.5}" font-size="11" font-weight="700" class="t-ink">${t}</text>`; });
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = s;
+  });
+}
+
+/* Governorates column chart */
+function govChart(host, rows){
+  const H = 380;
+  host.innerHTML = `<div class="plot" style="height:${H}px;border:0;overflow:visible"><svg role="img" aria-label="Unemployment rate by governorate"></svg><div class="tip" hidden><b></b><span></span></div></div>`;
+  const plot = $('.plot', host), svg = $('svg', plot), tip = $('.tip', plot);
+  let geo = [];
+  onWidth(plot, W => {
+    const T = 24, B = 86, PL = 28, ph = H - T - B, n = rows.length, slot = (W - PL) / n, bw = Math.min(26, slot * .55), max = Math.max(...rows.map(r => r[1]));
+    let s = ''; for (let k = 0; k <= 4; k++){ const y = T + k * ph / 4; s += `<line x1="0" x2="${W}" y1="${y}" y2="${y}" stroke="var(--grid)"/>`; }
+    geo = rows.map(([l, v, t], i) => { const h = v / max * ph, x = PL + (i + .5) * slot - bw / 2, y = T + ph - h;
+      s += `<rect data-i="${i}" x="${x}" y="${y}" width="${bw}" height="${h}" rx="3" fill="var(--blue2)"/><text x="${x+bw/2}" y="${y-6}" text-anchor="middle" font-size="10" font-weight="600" class="t-ink">${t}</text>`;
+      s += `<text transform="translate(${x+bw/2+3},${T+ph+12}) rotate(-45)" text-anchor="end" font-size="11" class="t-muted">${esc(l)}</text>`; return { x: x + bw / 2, y }; });
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = s;
+  });
+  const set = i => { svg.querySelectorAll('rect').forEach(r => r.setAttribute('opacity', i == null || +r.dataset.i === i ? 1 : .45)); if (i == null){ tip.hidden = true; return; } placeTip(plot, tip, geo[i].x, geo[i].y + 30, rows[i][0], rows[i][2]); };
+  plot.addEventListener('pointermove', e => { const r = plot.getBoundingClientRect(); set(clamp(Math.floor((e.clientX - r.left - 28) / ((r.width - 28) / rows.length)), 0, rows.length - 1)); });
+  plot.addEventListener('pointerleave', () => set(null));
+}
+
+/* ───────── GDP page ───────── */
+function buildGDP(){
+  kpis($('#gdp-kpis'), [
+    { featured:true, icon:'bar-chart', metric:'Annual GDP at Current Prices', chip:'FY2025/2024', num:'17.40', unit:'EGP trillion' },
+    { icon:'trending-up', metric:'Real GDP Growth Rate', chip:'FY2025/2024', num:'4.4%', good:true },
+    { icon:'calendar', metric:'GDP at Current Prices', chip:'Q2 2026/2025', num:'5188.89', unit:'EGP billion' },
+    { icon:'activity', metric:'Real GDP Growth Rate', chip:'Q2 2026/2025', num:'5.32%', good:true },
+    { icon:'pie-chart', metric:'Top Sector Contributing to GDP', chip:'FY 2024/2025', name:'Agriculture & Fishery', pill:'17.2%', tone:'green' }]);
+  lineChart($('#c-annual'), { id:'ann', h:320, labels:FY_ANNUAL, split:true, values:GDP_ANNUAL, vlabels:GDP_ANNUAL.map(v => v.toFixed(2)),
+    tipTitle:i => FY_ANNUAL[i], tipText:i => `EGP ${GDP_ANNUAL[i].toFixed(2)} trillion` });
+  columnChart($('#c-growth'), { h:320, labels:FY_ANNUAL, values:GDP_GROWTH, vlabels:GDP_GROWTH_LBL });
+  quarterlyChart($('#c-qgdp'), { id:'qg', type:'line', values:Q_GDP, legend:'GDP at Current Prices (EGP billion)', fmt:v => `EGP ${v.toFixed(2)} billion` });
+  quarterlyChart($('#c-qgr'), { id:'qr', type:'bar', values:Q_GR, legend:'Real GDP Growth Rate', fmt:v => v.toFixed(2) + '%' });
+  barList($('#c-sectors'), SECTORS, 3.00 * 1.165, v => v.toFixed(2));
+  treemap($('#c-treemap'), TREEMAP);
+}
+
+/* ───────── Labor page ───────── */
+function buildLabor(){
+  kpis($('#lab-kpis'), [
+    { featured:true, icon:'users', metric:'Labor Force Development in Egypt', chip:'2025', num:'34.15', unit:'million' },
+    { icon:'briefcase', metric:'Labor Force by Employment Status — Employed', chip:'2025', num:'32.02', unit:'million' },
+    { icon:'user-x', metric:'Labor Force by Employment Status — Unemployed', chip:'2025', num:'2.14', unit:'million' },
+    { icon:'map-pin', metric:'Unemployment Rate by Governorates', chip:'2025', name:'South Sinai', pill:'23.8%', tone:'red' },
+    { icon:'pie-chart', metric:'Employment by Sector', chip:'2025', name:'Agriculture & Fishery', pill:'20.5%', tone:'green' }]);
+  lineChart($('#c-lf'), { id:'lf', h:320, area:true, labels:LF_YEARS, values:LF, vlabels:LF_LBL, tipTitle:i => LF_YEARS[i], tipText:i => `${LF_LBL[i]} million` });
+  donut($('#c-gender'), GENDER);
+  hbarAxis($('#c-status'), STATUS, 35, 5);
+  pyramid($('#c-age'), AGE, 25);
+  barList($('#c-emp-sector'), EMP_SECTOR, 25, v => v.toFixed(1) + '%');
+  $('#c-overview').innerHTML = `
+    <div class="ov-big"><span class="num">32.02 M</span><span class="unit">Employed</span></div>
+    <div class="split"><div class="split-head"><span>Males <b>80.2%</b></span><span>Females <b>19.8%</b></span></div>
+      <div class="split-bar"><span style="width:80.2%;background:#0b66ae"></span><span style="width:19.8%;background:#f5a400"></span></div></div>
+    <div class="split"><div class="split-head"><span>Urban <b>42.2%</b></span><span>Rural <b>57.8%</b></span></div>
+      <div class="split-bar"><span style="width:42.2%;background:var(--sky)"></span><span style="width:57.8%;background:var(--green)"></span></div></div>`;
+  govChart($('#c-gov'), GOV);
+}
+
+buildGDP();
+})();
+</script>
+</body>
+</html>
